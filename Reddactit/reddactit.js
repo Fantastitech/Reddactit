@@ -67,3 +67,5 @@ function run() {
 		restoreUsernames();
 	}
 }
+
+run()
