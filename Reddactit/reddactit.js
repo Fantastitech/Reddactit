@@ -2,7 +2,9 @@ if (redacted == null) {
     var redacted = false;
 }
 
-var OP = ""
+if (OP == null) {
+    var OP = "";
+}
 
 function hashCode(str) {
     var hash = 0;
