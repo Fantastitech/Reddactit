@@ -4,11 +4,14 @@ if (redacted == null) {
 
 function hashCode(str) {
     var hash = 0;
-    for (var i = 0; i < str.length; i++) {
-       hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    if (str.length == 0) return hash;
+    for (i = 0; i < str.length; i++) {
+        char = str.charCodeAt(i);
+        hash = ((hash<<5)-hash)+char;
+        hash = hash & hash;
     }
     return hash;
-} 
+}
 
 function intToRGB(i){
     var c = (i & 0x00FFFFFF)
