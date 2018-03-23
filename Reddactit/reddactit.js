@@ -1,6 +1,8 @@
 if (redacted == null) {
-	var redacted = false;
+    var redacted = false;
 }
+
+var OP = ""
 
 function hashCode(str) {
     var hash = 0;
@@ -13,62 +15,90 @@ function hashCode(str) {
     return hash;
 }
 
-function intToRGB(i){
+function intToRGB(i) {
     var c = (i & 0x00FFFFFF)
-        .toString(16)
-        .toUpperCase();
+    .toString(16)
+    .toUpperCase();
 
     return "00000".substring(0, 6 - c.length) + c;
 }
 
 function hasSomeParentTheClass(element, classname) {
-    if (!element.parentNode) return false;
-    if (element.className.split(' ').indexOf(classname)>=0) return true;
+    if (!element.parentNode)
+        return false;
+    if (element.className.split(" ").indexOf(classname) >= 0)
+        return true;
     return hasSomeParentTheClass(element.parentNode, classname);
 }
 
 function redactUsernames() {
-	var x = document.getElementsByClassName("author");
-	var i;
-	for (i = 0; i < x.length; i++) {
-		var userName = x[i].innerHTML
+    var x = document.getElementsByClassName("author");
+    var i;
+    for (i = 0; i < x.length; i++) {
+        var userName = x[i].innerHTML.toLowerCase()
 		var color = "#" + intToRGB(hashCode(userName));
-		x[i].style.setProperty("color", "rgba(0, 0, 0, 0)", "important")
-		x[i].style.setProperty("background-color", color, "important")
-		if (x[i].classList.contains("submitter") || hasSomeParentTheClass(x[i], "top-matter")) {
-			x[i].style.setProperty("box-shadow", "inset 0 0 0 2px blue", "important")
-			x[i].style.setProperty("border-radius", "3px", "important")
-			x[i].style.setProperty("outline", "1px solid black", "important")
-			x[i].style.setProperty("outline-offset", "-3px", "important")
-		}
-	}
-	redacted = true
+        x[i].style.setProperty("color", "rgba(0, 0, 0, 0)", "important")
+        x[i].style.setProperty("background-color", color, "important")
+        if (x[i].classList.contains("submitter") || hasSomeParentTheClass(x[i], "top-matter")) {
+			OP = userName
+            x[i].style.setProperty("box-shadow", "inset 0 0 0 2px blue", "important")
+            x[i].style.setProperty("border-radius", "3px", "important")
+            x[i].style.setProperty("outline", "1px solid black", "important")
+            x[i].style.setProperty("outline-offset", "-3px", "important")
+        }
+		x[i].setAttribute("redacted","");
+    }
 }
 
-function restoreUsernames() {
-	var x = document.getElementsByClassName("author");
-	var i;
-	for (i = 0; i < x.length; i++) {
-		var userName = x[i].innerHTML
-		var color = "#" + intToRGB(hashCode(userName));
-		x[i].style.removeProperty("color");
-		x[i].style.removeProperty("background-color");
-		if (x[i].classList.contains("submitter") || hasSomeParentTheClass(x[i], "top-matter")) {
-			x[i].style.removeProperty("box-shadow")
-			x[i].style.removeProperty("border-radius")
-			x[i].style.removeProperty("outline")
-			x[i].style.removeProperty("outline-offset")
+function redactMentions() {
+	var x = document.getElementsByTagName("a");
+    var i;
+    for (i = 0; i < x.length; i++) {
+		if (/\/u\/[a-zA-Z0-9-_]{3,30}$/.test(x[i].href)) {
+			var userName = x[i].innerHTML.split("u/").pop().toLowerCase();
+			var color = "#" + intToRGB(hashCode(userName));
+			x[i].style.setProperty("color", "rgba(0, 0, 0, 0)", "important")
+			x[i].style.setProperty("background-color", color, "important")
+			if (userName == OP) {
+				x[i].style.setProperty("box-shadow", "inset 0 0 0 2px blue", "important")
+				x[i].style.setProperty("border-radius", "3px", "important")
+				x[i].style.setProperty("outline", "1px solid black", "important")
+				x[i].style.setProperty("outline-offset", "-3px", "important")
+			}
+			x[i].setAttribute("redacted","");
 		}
 	}
-	redacted = false;
+}
+
+
+function restoreUsernames() {
+    var x = document.getElementsByTagName("a");
+    var i;
+    for (i = 0; i < x.length; i++) {
+		if (x[i].hasAttribute("redacted")) {
+			var userName = x[i].innerHTML.split("u/").pop().toLowerCase();
+			console.log(userName)
+			x[i].style.removeProperty("color");
+			x[i].style.removeProperty("background-color");
+			if (userName == OP) {
+				x[i].style.removeProperty("box-shadow")
+				x[i].style.removeProperty("border-radius")
+				x[i].style.removeProperty("outline")
+				x[i].style.removeProperty("outline-offset")
+			}
+		}
+    }
 }
 
 function run() {
-	if (redacted == false) {
-		redactUsernames();
-	} else if (redacted == true) {
-		restoreUsernames();
-	}
+    if (redacted == false) {
+        redactUsernames();
+		redactMentions();
+		redacted = true
+    } else if (redacted == true) {
+        restoreUsernames();
+		redacted = false
+    }
 }
 
 run()
