@@ -1,6 +1,6 @@
 {
   "name": "Reddactit",
-  "version": "1.0",
+  "version": "1.3.2",
   "description": "Username redactor for reddit with color coding for easy reading",
   "background" : {
     "scripts" : ["background.js"]
@@ -8,6 +8,6 @@
   "browser_action": {
     "default_icon": "templogo.png"
   },
-  "permissions": ["activeTab", "*://*.reddit.com/*"],
+  "permissions": ["activeTab", "contextMenus", "*://*.reddit.com/*"],
   "manifest_version": 2
 }
