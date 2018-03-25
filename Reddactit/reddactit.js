@@ -6,7 +6,12 @@ if (redacted == null) {
 // The OP array will be used to style the OP in places where it can't be detected via the HTML.
 if (OP == null) {
     var OP = []; 
-} 
+}
+
+if (mods == null) {
+    var mods = []; 
+}
+
 
 // Create a hash of a string. Usernames will be fed here.
 function hashCode(str) {
@@ -46,19 +51,29 @@ function redactUsernames() {
     var x = document.getElementsByClassName("author"); // Get all elements with class "author".
     var i;
     for (i = 0; i < x.length; i++) {
+		if (x[i].classList.contains("admin")) { // Skip admins
+			continue
+        }
         var userName = x[i].innerHTML.toLowerCase() // Usernames must be converted to lowercase for consistency of hashes with username mentions that use incorrect case.
-	var color = "#" + intToRGB(hashCode(userName)); // Get color from username string.
-	x[i].style.setProperty("transition", "all 0.15s ease")
+		var color = "#" + intToRGB(hashCode(userName)); // Get color from username string.
+		x[i].style.setProperty("transition", "all 0.15s ease")
         x[i].style.setProperty("color", "rgba(0, 0, 0, 0)", "important") // Make username transparent.
         x[i].style.setProperty("background-color", color, "important") // Add color from hash to background.
-        if (x[i].classList.contains("submitter") || hasSomeParentTheClass(x[i], "top-matter")) { // Add additional styling to the OP's username.
-	    OP.push(userName); // If user is OP, add username to OP array so we can make styling consistent for username mentions.
-            x[i].style.setProperty("box-shadow", "inset 0 0 0 2px blue", "important")
+        if ((x[i].classList.contains("submitter") || hasSomeParentTheClass(x[i], "top-matter")) && !(x[i].classList.contains("moderator") || x[i].classList.contains("admin"))) { // Add additional styling to the OP's username.
+			OP.push(userName); // If user is OP, add username to OP array so we can make styling consistent for username mentions.
+            x[i].style.setProperty("box-shadow", "inset 0 0 0 2px #0055DF", "important")
             x[i].style.setProperty("border-radius", "3px", "important")
             x[i].style.setProperty("outline", "1px solid black", "important") // Add a black barrier between the outline to make it more distinct when colors clash.
             x[i].style.setProperty("outline-offset", "-3px", "important")
         }
-	x[i].setAttribute("redacted",""); // Mark elements as having been modified by the script.
+		if ((x[i].classList.contains("moderator")) && !(x[i].classList.contains("admin"))) { // Add additional styling to the OP's username.
+			mods.push(userName);
+            x[i].style.setProperty("box-shadow", "inset 0 0 0 2px #228822", "important")
+            x[i].style.setProperty("border-radius", "3px", "important")
+            x[i].style.setProperty("outline", "1px solid black", "important") // Add a black barrier between the outline to make it more distinct when colors clash.
+            x[i].style.setProperty("outline-offset", "-3px", "important")
+        }
+		x[i].setAttribute("redacted",""); // Mark elements as having been modified by the script.
     }
 }
 
@@ -73,8 +88,14 @@ function redactMentions() {
 			x[i].style.setProperty("transition", "all 0.15s ease")
 			x[i].style.setProperty("color", "rgba(0, 0, 0, 0)", "important") // Style same as before.
 			x[i].style.setProperty("background-color", color, "important")
-			if (OP.indexOf(userName) > -1) { // If user has been set as an OP in redactUsernames(), add OP style.
-				x[i].style.setProperty("box-shadow", "inset 0 0 0 2px blue", "important")
+			if ((OP.indexOf(userName) > -1) && !(x[i].classList.contains("moderator"))) { // If user has been set as an OP in redactUsernames(), add OP style.
+				x[i].style.setProperty("box-shadow", "inset 0 0 0 2px #0055DF", "important")
+				x[i].style.setProperty("border-radius", "3px", "important")
+				x[i].style.setProperty("outline", "1px solid black", "important")
+				x[i].style.setProperty("outline-offset", "-3px", "important")
+			}
+			if (mods.indexOf(userName) > -1) { // If user has been set as an mod in redactUsernames(), add mod style.
+				x[i].style.setProperty("box-shadow", "inset 0 0 0 2px #228822", "important")
 				x[i].style.setProperty("border-radius", "3px", "important")
 				x[i].style.setProperty("outline", "1px solid black", "important")
 				x[i].style.setProperty("outline-offset", "-3px", "important")
@@ -93,7 +114,7 @@ function restoreUsernames() {
 			var userName = x[i].innerHTML.split("u/").pop().toLowerCase(); // Get username.
 			x[i].style.removeProperty("color"); // Remove all styles including OP flair.
 			x[i].style.removeProperty("background-color");
-			if (OP.indexOf(userName) > -1) {
+			if ((OP.indexOf(userName) > -1) || (mods.indexOf(userName) > -1)) {
 				x[i].style.removeProperty("box-shadow")
 				x[i].style.removeProperty("border-radius")
 				x[i].style.removeProperty("outline")
@@ -103,6 +124,7 @@ function restoreUsernames() {
 		}
     }
 	OP.length = 0;
+	mods.length = 0;
 }
 
 function run() {
