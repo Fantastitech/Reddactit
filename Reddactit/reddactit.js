@@ -47,17 +47,18 @@ function redactUsernames() {
     var i;
     for (i = 0; i < x.length; i++) {
         var userName = x[i].innerHTML.toLowerCase() // Usernames must be converted to lowercase for consistency of hashes with username mentions that use incorrect case.
-		var color = "#" + intToRGB(hashCode(userName)); // Get color from username string.
+	var color = "#" + intToRGB(hashCode(userName)); // Get color from username string.
+	x[i].style.setProperty("transition", "all 0.15s ease")
         x[i].style.setProperty("color", "rgba(0, 0, 0, 0)", "important") // Make username transparent.
         x[i].style.setProperty("background-color", color, "important") // Add color from hash to background.
         if (x[i].classList.contains("submitter") || hasSomeParentTheClass(x[i], "top-matter")) { // Add additional styling to the OP's username.
-			OP.push(userName); // If user is OP, add username to OP array so we can make styling consistent for username mentions.
+	    OP.push(userName); // If user is OP, add username to OP array so we can make styling consistent for username mentions.
             x[i].style.setProperty("box-shadow", "inset 0 0 0 2px blue", "important")
             x[i].style.setProperty("border-radius", "3px", "important")
             x[i].style.setProperty("outline", "1px solid black", "important") // Add a black barrier between the outline to make it more distinct when colors clash.
             x[i].style.setProperty("outline-offset", "-3px", "important")
         }
-		x[i].setAttribute("redacted",""); // Mark elements as having been modified by the script.
+	x[i].setAttribute("redacted",""); // Mark elements as having been modified by the script.
     }
 }
 
@@ -69,6 +70,7 @@ function redactMentions() {
 		if (/\/u\/[a-zA-Z0-9-_]{3,30}$/.test(x[i].href)) { // Regex to find username mentions: "*/u/" followed by 3-30 alphanumeric characters plus - and _
 			var userName = x[i].innerHTML.split("u/").pop().toLowerCase(); // Get username from mention and remove "/u/"
 			var color = "#" + intToRGB(hashCode(userName)); // Get color from username.
+			x[i].style.setProperty("transition", "all 0.15s ease")
 			x[i].style.setProperty("color", "rgba(0, 0, 0, 0)", "important") // Style same as before.
 			x[i].style.setProperty("background-color", color, "important")
 			if (OP.indexOf(userName) > -1) { // If user has been set as an OP in redactUsernames(), add OP style.
