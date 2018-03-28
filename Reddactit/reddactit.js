@@ -54,105 +54,102 @@ function getUserID(element) {
     return userId;
 }
 
-function restoreMatchingUsernames(e) {
-	var x = document.getElementsByTagName("a");
-	var sourceUserName = e.innerHTML.split("u/").pop().toLowerCase();
-	for (i = 0; i < x.length; i++) {
-		if (x[i].hasAttribute("redacted")) {
-			var destUserName = x[i].innerHTML.split("u/").pop().toLowerCase();
-			if (sourceUserName == destUserName) {
-				x[i].style.removeProperty("background-color");
-				x[i].style.removeProperty("color");
-				if ((OP.indexOf(sourceUserName) > -1) || (mods.indexOf(sourceUserName) > -1)) {
-					x[i].style.removeProperty("box-shadow")
-					x[i].style.removeProperty("border-radius")
-					x[i].style.removeProperty("outline")
-					x[i].style.removeProperty("outline-offset")
-				}
-				x[i].removeAttribute("redacted");
-			}
-		}
+function addStyle(element) {
+	var userName = element.innerHTML.split("u/").pop().toLowerCase(); // Get username from mention and remove "/u/"
+	var color = "#" + intToRGB(hashCode(userName));
+	element.style.setProperty("transition", "all 0.15s ease")
+    element.style.setProperty("color", "rgba(0, 0, 0, 0)", "important") // Make username transparent.
+    element.style.setProperty("background-color", color, "important") // Add color from hash to background.
+	if ((OP.indexOf(userName) > -1) && !(element.classList.contains("moderator"))) { // If user has been set as an OP in redactUsernames(), add OP style.
+		element.style.setProperty("box-shadow", "inset 0 0 0 2px #0055DF", "important")
+		element.style.setProperty("border-radius", "3px", "important")
+		element.style.setProperty("outline", "1px solid black", "important")
+		element.style.setProperty("outline-offset", "-3px", "important")
+	}
+	if (mods.indexOf(userName) > -1) { // Add additional styling to the OP's username.
+		element.style.setProperty("box-shadow", "inset 0 0 0 2px #228822", "important")
+		element.style.setProperty("border-radius", "3px", "important")
+		element.style.setProperty("outline", "1px solid black", "important") // Add a black barrier between the outline to make it more distinct when colors clash.
+		element.style.setProperty("outline-offset", "-3px", "important")
+    }
+}
+
+function removeStyle(element) {
+	var userName = element.innerHTML.split("u/").pop().toLowerCase(); // Get username.
+	element.style.removeProperty("color"); // Remove all styles including OP flair.
+	element.style.removeProperty("background-color");
+	if ((OP.indexOf(userName) > -1) || (mods.indexOf(userName) > -1)) {
+		element.style.removeProperty("box-shadow")
+		element.style.removeProperty("border-radius")
+		element.style.removeProperty("outline")
+		element.style.removeProperty("outline-offset")
 	}
 }
 
-// Process usernames that are part of the reddit style.
-function redactUsernames() {
-	document.documentElement.onclick = function(event) {
-		if (event.target.hasAttribute("redacted")) {
-			event.preventDefault();
-			restoreMatchingUsernames(event.target);
+function redactMatchingUsernames(e) {
+	var x = document.getElementsByTagName("a");
+	var sourceUserName = e.innerHTML.split("u/").pop().toLowerCase();
+	Array.from(x).forEach(function(i) {
+		if (i.getAttribute("redacted") == "false") {
+			var destUserName = i.innerHTML.split("u/").pop().toLowerCase();
+			if (sourceUserName == destUserName) {
+				addStyle(i);
+				i.setAttribute("redacted", "true");
+			}
 		}
+	});
+}
 
-	}
+function restoreMatchingUsernames(e) {
+	var x = document.getElementsByTagName("a");
+	var sourceUserName = e.innerHTML.split("u/").pop().toLowerCase();
+	Array.from(x).forEach(function(i) {
+		if (i.getAttribute("redacted") == "true") {
+			var destUserName = i.innerHTML.split("u/").pop().toLowerCase();
+			if (sourceUserName == destUserName) {
+				removeStyle(i)
+				i.setAttribute("redacted", "false");
+			}
+		}
+	});
+}
+
+// Process usernames that are part of the reddit style.
+function redactAllUsernames() {
     var x = document.getElementsByClassName("author"); // Get all elements with class "author".
     Array.from(x).forEach(function(i) {
 		if (i.classList.contains("admin")) { // Skip admins
 			return
-        }		
+        }
         var userName = i.innerHTML.toLowerCase() // Usernames must be converted to lowercase for consistency of hashes with username mentions that use incorrect case.		
-		var color = "#" + intToRGB(hashCode(userName)); // Get color from username string.
-		i.style.setProperty("transition", "all 0.15s ease")
-        i.style.setProperty("color", "rgba(0, 0, 0, 0)", "important") // Make username transparent.
-        i.style.setProperty("background-color", color, "important") // Add color from hash to background.
         if ((i.classList.contains("submitter") || hasSomeParentTheClass(i, "top-matter")) && !(i.classList.contains("moderator") || i.classList.contains("admin"))) { // Add additional styling to the OP's username.
 			OP.push(userName); // If user is OP, add username to OP array so we can make styling consistent for username mentions.
-            i.style.setProperty("box-shadow", "inset 0 0 0 2px #0055DF", "important")
-            i.style.setProperty("border-radius", "3px", "important")
-            i.style.setProperty("outline", "1px solid black", "important") // Add a black barrier between the outline to make it more distinct when colors clash.
-            i.style.setProperty("outline-offset", "-3px", "important")
         }
 		if ((i.classList.contains("moderator")) && !(i.classList.contains("admin"))) { // Add additional styling to the OP's username.
 			mods.push(userName);
-            i.style.setProperty("box-shadow", "inset 0 0 0 2px #228822", "important")
-            i.style.setProperty("border-radius", "3px", "important")
-            i.style.setProperty("outline", "1px solid black", "important") // Add a black barrier between the outline to make it more distinct when colors clash.
-            i.style.setProperty("outline-offset", "-3px", "important")
         }
-		i.setAttribute("redacted",""); // Mark elements as having been modified by the script.
+		addStyle(i)
+		i.setAttribute("redacted", "true"); // Mark elements as having been modified by the script.
     });
 }
 
 // Process usernames mentioned in the body of comments using "*u/".
-function redactMentions() {
+function redactAllMentions() {
 	var x = document.getElementsByTagName("a"); // Get all <a> elements.
     Array.from(x).forEach(function(i) {
 		if (/\/u\/[a-zA-Z0-9-_]{3,30}$/.test(i.href)) { // Regex to find username mentions: "*/u/" followed by 3-30 alphanumeric characters plus - and _
-			var userName = i.innerHTML.split("u/").pop().toLowerCase(); // Get username from mention and remove "/u/"
-			var color = "#" + intToRGB(hashCode(userName)); // Get color from username.
-			i.style.setProperty("transition", "all 0.15s ease")
-			i.style.setProperty("color", "rgba(0, 0, 0, 0)", "important") // Style same as before.
-			i.style.setProperty("background-color", color, "important")
-			if ((OP.indexOf(userName) > -1) && !(i.classList.contains("moderator"))) { // If user has been set as an OP in redactUsernames(), add OP style.
-				i.style.setProperty("box-shadow", "inset 0 0 0 2px #0055DF", "important")
-				i.style.setProperty("border-radius", "3px", "important")
-				i.style.setProperty("outline", "1px solid black", "important")
-				i.style.setProperty("outline-offset", "-3px", "important")
-			}
-			if (mods.indexOf(userName) > -1) { // If user has been set as an mod in redactUsernames(), add mod style.
-				i.style.setProperty("box-shadow", "inset 0 0 0 2px #228822", "important")
-				i.style.setProperty("border-radius", "3px", "important")
-				i.style.setProperty("outline", "1px solid black", "important")
-				i.style.setProperty("outline-offset", "-3px", "important")
-			}
-			i.setAttribute("redacted",""); // Mark elements as having been modified by the script.
+			addStyle(i)
+			i.setAttribute("redacted", "true"); // Mark elements as having been modified by the script.
 		}
 	});
 }
 
 // Remove all styles set by the redaction functions
-function restoreUsernames() {
+function restoreAllUsernames() {
     var x = document.getElementsByTagName("a"); // Get all <a> elements.
     Array.from(x).forEach(function(i) {
 		if (i.hasAttribute("redacted")) { // Find elements we previously marked with the "redacted" attribute.
-			var userName = i.innerHTML.split("u/").pop().toLowerCase(); // Get username.
-			i.style.removeProperty("color"); // Remove all styles including OP flair.
-			i.style.removeProperty("background-color");
-			if ((OP.indexOf(userName) > -1) || (mods.indexOf(userName) > -1)) {
-				i.style.removeProperty("box-shadow")
-				i.style.removeProperty("border-radius")
-				i.style.removeProperty("outline")
-				i.style.removeProperty("outline-offset")
-			}
+			removeStyle(i)
 			i.removeAttribute("redacted");
 		}
     });
@@ -160,14 +157,46 @@ function restoreUsernames() {
 	mods.length = 0;
 }
 
+function addUsernameClickCapture() {
+	document.documentElement.onclick = function(event) {
+		if (event.target.hasAttribute("redacted")) {
+			event.preventDefault();
+			if ((event.target.getAttribute("redacted")) == "true") {
+				restoreMatchingUsernames(event.target);
+			} else {
+				redactMatchingUsernames(event.target);
+			}
+		}
+	}
+	document.documentElement.onmouseover = function(event) {
+		if (event.target.getAttribute("redacted", "true") == "true") {
+			//removeStyle(event.target)
+			event.target.style.removeProperty("box-shadow")
+			event.target.style.removeProperty("outline")
+			event.target.style.removeProperty("outline-offset")
+			event.target.style.removeProperty("color") // Make username transparent.
+			event.target.style.setProperty("background-color", "lightgrey")
+		}
+	}
+	document.documentElement.onmouseout = function(event) {
+		if (event.target.getAttribute("redacted") == "true") {
+			addStyle(event.target)
+		} else if (event.target.getAttribute("redacted") == "false") {
+			removeStyle(event.target)
+		}
+	}	
+}
+
 function run() {
     if (redacted == false) {
-        redactUsernames(); // Redact usernames, mentions, and set redacted variable to true.
-		redactMentions();
-		redacted = true
+		addUsernameClickCapture();
+        redactAllUsernames(); // Redact usernames, mentions, and set redacted variable to true.
+		redactAllMentions();
+		redacted = true;
     } else if (redacted == true) {
-        restoreUsernames(); // Remove all styling done by redaction functions and set redacted variable to false.
-		redacted = false
+        restoreAllUsernames(); // Remove all styling done by redaction functions and set redacted variable to false.
+		document.documentElement.onclick = "";
+		redacted = false;
     }
 }
 
